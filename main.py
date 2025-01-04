@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Form
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
 from typing import List, Dict, Optional, Any
 
 app = FastAPI()
@@ -27,9 +27,23 @@ class Node(BaseModel):
     data: NodeData
     width: int
     height: int
-    selected: bool
-    positionAbsolute: Position
-    dragging: bool
+    selected: Optional[bool] = None
+    positionAbsolute: Optional[Position] = None
+    dragging: Optional[bool] = None
+
+    class Config:
+        extra = "allow"
+
+    @root_validator(pre=True)
+    def set_optional_fields(cls, values):
+        # Set default values for optional fields if they're missing
+        if 'selected' not in values:
+            values['selected'] = False
+        if 'dragging' not in values:
+            values['dragging'] = False
+        if 'positionAbsolute' not in values:
+            values['positionAbsolute'] = values.get('position')
+        return values
 
 class MarkerEnd(BaseModel):
     type: str
@@ -38,17 +52,23 @@ class MarkerEnd(BaseModel):
 
 class Edge(BaseModel):
     source: str
-    sourceHandle: Optional[str]
+    sourceHandle: Optional[str] = None
     target: str
-    targetHandle: Optional[str]
-    type: str
-    animated: bool
-    markerEnd: Optional[MarkerEnd]
-    id: str
+    targetHandle: Optional[str] = None
+    type: Optional[str] = None
+    animated: Optional[bool] = False
+    markerEnd: Optional[MarkerEnd] = None
+    id: Optional[str] = None
+
+    class Config:
+        extra = "allow"
 
 class GraphData(BaseModel):
     nodes: List[Node]
     edges: List[Edge]
+
+    class Config:
+        extra = "allow"
 
 class ValidationResponse(BaseModel):
     is_dag: bool
